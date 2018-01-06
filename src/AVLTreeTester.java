@@ -1,12 +1,17 @@
+//package HW4;
 /**
- * Created by ramon on 1/6/18.
+ * Created by ramon on 7/17/17.
  */
-
-
 public class AVLTreeTester {
+
+    public static int insertCount, balanceCount, updateHeightCount = 0;
+    public static int leftRotateCount, doubleLeftRotateCount = 0;
+    public static int rightRotateCount, doubleRightRotateCount = 0;
+
+
     public static void main(String[] args) {
-//        System.out.println(tester());
-        go();
+        System.out.println("All valid AVLs: " + tester());
+//        go();
     }
 
     public static void go() {
@@ -25,11 +30,14 @@ public class AVLTreeTester {
 
     public static boolean tester() {
         boolean works = true;
-        for(int j = 0; j < 1000; j++) {
+        int iterations = 10;
+        for(int j = 0; j < iterations; j++) {
+            resetTestVariables();
             AVLTree tree = new AVLTree();
-            int size = 3000;
-            int range = 1000;
-            int[] keys = new int[(int)(Math.random()*size)];
+            int size = 1000;
+            int range = 10000;
+//            int[] keys = new int[(int)(Math.random()*size)];
+            int[] keys = new int[size];
             for (int i : keys) {
                 i = (int) (Math.random() * range);
                 tree.avlInsert(tree.root, new AVLTree.Node(i));
@@ -37,8 +45,27 @@ public class AVLTreeTester {
             if (!tree.checkAVL()) {
                 works = false;
             }
+            printTestVariables();
+//            tree.printTreeView();
         }
         return works;
+    }
+
+    public static void resetTestVariables() {
+        insertCount = balanceCount = updateHeightCount = 0;
+        leftRotateCount = doubleLeftRotateCount = 0;
+        rightRotateCount = doubleRightRotateCount = 0;
+    }
+
+    public static void printTestVariables() {
+        System.out.printf("I: %d\n" +
+                        "Bln: %d, Upd: %d\n" +
+                        "LR: %d, DLR: %d\n" +
+                        "RR: %d, DRR: %d\n" +
+                        "_______________\n",
+                insertCount, balanceCount, updateHeightCount,
+                leftRotateCount, doubleLeftRotateCount,
+                rightRotateCount, doubleRightRotateCount);
     }
 }
 
@@ -52,6 +79,7 @@ class AVLTree {
     }
 
     public void avlInsert(Node x, Node z) {
+        AVLTreeTester.insertCount++;
         if (root == nil)
             root = z;
         else {
@@ -61,40 +89,49 @@ class AVLTree {
                     z.p = x;
                 } else
                     avlInsert(x.left, z);
-            else
-            if (x.right == nil) {
-                x.right = z;
-                z.p = x;
-            } else
-                avlInsert(x.right, z);
+            else {
+                if (x.right == nil) {
+                    x.right = z;
+                    z.p = x;
+                } else
+                    avlInsert(x.right, z);
+            }
             balance(x);
         }
     }
 
     public void balance(Node x) {
         int diff = x.left.h - x.right.h;
-        if (Math.abs(diff) > 1)
+        if (Math.abs(diff) > 1) {
             if (diff > 0)
                 rightRotate(x);
             else
                 leftRotate(x);
+            balance(x.p);
+//            updateHeight(x.p);
+            AVLTreeTester.balanceCount++;
+        }
         else
             updateHeight(x);
     }
 
     public void updateHeight(Node x) {
         if (x != nil) {
+            AVLTreeTester.updateHeightCount++;
             int newH = 1 + Math.max(x.left.h, x.right.h);
             if (x.h != newH) {
                 x.h = newH;
-                updateHeight(x.p);
+//                updateHeight(x.p);
             }
         }
     }
 
     public void leftRotate(Node x) {
-        if (x.right.left.h > x.right.right.h)  // do a double rotation.
+        AVLTreeTester.leftRotateCount++;
+        if (x.right.left.h > x.right.right.h) {  // do a double rotation.
+            AVLTreeTester.doubleLeftRotateCount++;
             rightRotate(x.right);
+        }
         Node y = x.right;
         x.right = y.left;
         if (y.left != nil)
@@ -108,13 +145,15 @@ class AVLTree {
             x.p.right = y;
         y.left = x;
         x.p = y;
-
         updateHeight(x);
     }
 
     public void rightRotate(Node x) {
-        if (x.left.right.h > x.left.left.h)  // do a double rotation.
+        AVLTreeTester.rightRotateCount++;
+        if (x.left.right.h > x.left.left.h) {  // do a double rotation.
+            AVLTreeTester.doubleRightRotateCount++;
             leftRotate(x.left);
+        }
         Node y = x.left;
         x.left = y.right;
         if (y.right != nil)
@@ -128,7 +167,6 @@ class AVLTree {
             x.p.left = y;
         y.right = x;
         x.p = y;
-
         updateHeight(x);
     }
 
@@ -161,38 +199,33 @@ class AVLTree {
 
     protected static class Sentinel extends Node {
         public Sentinel() {
-            super(Integer.MAX_VALUE);
+            super(0);
             h = -1;
+            p = left = right = this;
         }
     }
 
     static class Node {
         int key;
         int h;
-
         Node p;
         Node left;
         Node right;
-
         public Node(int key) {
             this.key = key;
             h = 0;
             p = left = right = AVLTree.nil;
         }
-
         public void printTreeView(int level) {
             if (this != AVLTree.nil) {
                 right.printTreeView(level + 1);
-
                 String spaces = "";
                 for (int i = 0; i < level; i++)
                     spaces += "      ";
                 System.out.println(spaces + this);
-
                 left.printTreeView(level + 1);
             }
         }
-
         @Override
         public String toString() {
             return "(" + key + "," + h + ")";
